@@ -1,0 +1,4 @@
+# Installed into helper/.venv by installer/install.py
+yt-dlp[default]
+# JavaScript runtime yt-dlp needs for YouTube (ships the deno binary)
+deno

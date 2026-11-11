@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "VidGrab – Video Downloader",
+  "short_name": "VidGrab",
+  "version": "1.0.0",
+  "description": "Download videos from YouTube, Instagram, Facebook and 1000+ sites in the format you choose.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiSmHxwQIcTJjp/IB/qKr0mqsjQ/euDejFuSgpAsi8sIsTKo45X3AN7qmTbNDOUjLRYIvOW7WtCM35fc7TpKGTIZ6qpBZvlxpSAFiwDNRxScFssosNWClClwdlcI/vnTkTHLK67N2wmBU2/jHKva2k0By0qqKurAUF4N2UUcND0VkvvWCTZK/epje1dfH11N77iK2jEZjvgzARAeHfLKTCYmKbHXKcbRGAGxXoLj4X/vfEa1w92GjR7VL56KIQwPMn9BkJRbyTXZHls9vSy7P4SVQb/57tbPrXHuY89f9BkwFbRdOzj/NF7N3mBIQvugJc5ph3y21Zf0LpuO7n4If0QIDAQAB",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Download this video",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/main.js",
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "nativeMessaging",
+    "storage",
+    "cookies",
+    "tabs",
+    "contextMenus",
+    "notifications"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/resolver.js", "content/overlay.js", "content/main.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup/popup.html"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
+}

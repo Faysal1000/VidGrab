@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VidGrab</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <img src="../icons/icon32.png" alt="" width="22" height="22">
+        <span>VidGrab</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="settings-btn" type="button" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="icon-btn" id="close-btn" type="button" title="Close" aria-label="Close" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Exactly one of these sections is visible at a time (see popup.js#showView). -->
+      <section id="view-loading" class="view">
+        <div class="skeleton thumb"></div>
+        <div class="skeleton line"></div>
+        <div class="skeleton line short"></div>
+        <p class="muted center">Finding the video…</p>
+      </section>
+
+      <section id="view-error" class="view" hidden>
+        <div class="notice">
+          <strong id="error-title">Couldn't load this video</strong>
+          <p id="error-message"></p>
+          <div id="error-setup" class="setup" hidden>
+            <p>One-time setup — run the installer in the VidGrab folder:</p>
+            <ul>
+              <li><b>Mac:</b> <code>./install_mac.sh</code></li>
+              <li><b>Linux:</b> <code>./install_linux.sh</code></li>
+              <li><b>Windows:</b> double-click <code>install_windows.bat</code></li>
+            </ul>
+            <p>Then fully quit and reopen the browser.</p>
+          </div>
+          <button class="btn secondary" id="retry-btn" type="button">Try again</button>
+        </div>
+      </section>
+
+      <section id="view-video" class="view" hidden>
+        <div class="media">
+          <img id="thumb" class="thumb" alt="">
+          <span id="duration" class="duration" hidden></span>
+        </div>
+        <h1 id="title" class="title"></h1>
+        <p id="subtitle" class="muted subtitle"></p>
+
+        <div class="segmented" role="tablist" aria-label="Download type">
+          <button type="button" role="tab" data-kind="video" aria-selected="true">Video</button>
+          <button type="button" role="tab" data-kind="audio" aria-selected="false">Audio only</button>
+        </div>
+
+        <div id="video-options" class="options">
+          <label class="field">
+            <span>Quality</span>
+            <select id="quality"></select>
+          </label>
+          <label class="field">
+            <span>Format</span>
+            <select id="container"></select>
+          </label>
+        </div>
+
+        <div id="audio-options" class="options" hidden>
+          <label class="field wide">
+            <span>Format</span>
+            <select id="audio-format"></select>
+          </label>
+        </div>
+
+        <button class="btn primary" id="download-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11.5M7.5 10.5 12 15l4.5-4.5M4.5 13.5v2.5A3.5 3.5 0 0 0 8 19.5h8a3.5 3.5 0 0 0 3.5-3.5v-2.5"/></svg>
+          <span>Download</span>
+        </button>
+
+        <!-- Shown only when the video belongs to a playlist (popup.js#renderPlaylist). -->
+        <div id="playlist-row" class="playlist" hidden>
+          <div class="playlist-text">
+            <span class="playlist-kicker">Part of a playlist</span>
+            <strong id="playlist-title"></strong>
+            <span id="playlist-count" class="muted"></span>
+          </div>
+          <button class="btn secondary" id="playlist-btn" type="button">Download all</button>
+        </div>
+      </section>
+
+      <section id="downloads" class="downloads" hidden>
+        <div class="downloads-head">
+          <h2>Downloads</h2>
+          <button class="link-btn" id="clear-btn" type="button">Clear finished</button>
+        </div>
+        <ul id="job-list" class="job-list"></ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span id="helper-status" class="muted">Checking helper…</span>
+      <button class="link-btn" id="update-btn" type="button" hidden>Update yt-dlp</button>
+    </footer>
+  </div>
+</body>
+</html>

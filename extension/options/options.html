@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VidGrab Settings</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="options.css">
+  <script type="module" src="options.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="page-head">
+      <img src="../icons/icon48.png" alt="" width="40" height="40">
+      <div>
+        <h1>VidGrab settings</h1>
+        <p class="muted">Changes are saved automatically.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Downloads</h2>
+      <label class="row stacked">
+        <span class="label">Save to folder</span>
+        <input type="text" id="downloadDir" placeholder="Default: your Downloads folder" spellcheck="false">
+        <span class="hint">Full path, e.g. <code>~/Movies/VidGrab</code> or <code>C:\Users\me\Videos</code>. Leave empty for Downloads.</span>
+      </label>
+      <label class="row">
+        <span>
+          <span class="label">Show download button on videos</span>
+          <span class="hint">Appears in the corner when you hover a video.</span>
+        </span>
+        <input type="checkbox" id="showOverlayButton" class="switch">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Logged-in content</h2>
+      <label class="row">
+        <span>
+          <span class="label">Use my browser login</span>
+          <span class="hint">Needed for private or login-only videos (Instagram, Facebook…). Cookies are passed only to the helper on this computer, only for the site you're downloading from.</span>
+        </span>
+        <input type="checkbox" id="useCookies" class="switch">
+      </label>
+      <label class="row">
+        <span>
+          <span class="label">Also use my login for YouTube</span>
+          <span class="hint">Only turn on for age-restricted videos or "confirm you're not a bot" errors. It can occasionally sign you out of YouTube in this browser.</span>
+        </span>
+        <input type="checkbox" id="useCookiesForYouTube" class="switch">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Helper</h2>
+      <div class="row">
+        <span>
+          <span class="label" id="helper-line">Checking…</span>
+          <span class="hint" id="helper-detail"></span>
+        </span>
+        <button class="btn secondary" id="update-btn" type="button">Update yt-dlp</button>
+      </div>
+    </section>
+
+    <p class="saved muted" id="saved" aria-live="polite"></p>
+  </main>
+</body>
+</html>
