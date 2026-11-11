@@ -19,7 +19,8 @@ from yt_dlp.postprocessor.common import PostProcessor
 from yt_dlp.utils import DownloadCancelled, DownloadError
 
 from . import formats
-from .cookies import cookie_file
+from . import instagram
+from .cookies import cookie_file, describe_cookies
 from .environment import Tools
 
 log = logging.getLogger("vidgrab.ytdlp")
@@ -79,7 +80,8 @@ def clean_error(error: BaseException) -> str:
     return message
 
 
-def _base_options(tools: Tools, cookiefile: str | None) -> dict[str, Any]:
+def _base_options(tools: Tools, cookiefile: str | None,
+                  user_agent: str | None = None) -> dict[str, Any]:
     options: dict[str, Any] = {
         "logger": _YtDlpLogger(),
         "quiet": True,
@@ -98,7 +100,32 @@ def _base_options(tools: Tools, cookiefile: str | None) -> dict[str, Any]:
         options["js_runtimes"] = {"deno": {"path": tools.deno}}
     if cookiefile:
         options["cookiefile"] = cookiefile
+    if user_agent:
+        # Same user-agent as the browser the cookies came from, so sites don't
+        # treat the session as hijacked.
+        options["http_headers"] = {"User-Agent": user_agent}
     return options
+
+
+def _extract(ydl: yt_dlp.YoutubeDL, url: str, download: bool) -> dict[str, Any] | None:
+    """ydl.extract_info with site-specific fallbacks for known yt-dlp breakages."""
+    try:
+        return ydl.extract_info(url, download=download)
+    except DownloadError as exc:
+        if not instagram.is_story_url(url):
+            raise
+        log.info("yt-dlp story extractor failed (%s); trying the story page instead", exc)
+        try:
+            story = instagram.story_info(ydl, url)
+        except instagram.StoryError as story_exc:
+            raise FetchError(str(story_exc)) from exc
+        except Exception as fallback_exc:
+            log.warning("story page fallback failed: %s", fallback_exc)
+            raise exc from None
+        if not story:
+            raise FetchError("Instagram didn't return this story. It may have expired, or this "
+                             "account's stories aren't visible to you.") from exc
+        return ydl.process_ie_result(story, download=download)
 
 
 def _has_playlist_param(url: str) -> bool:
@@ -137,7 +164,8 @@ def _playlist_from_info(info: dict[str, Any], url: str) -> dict[str, Any] | None
     }
 
 
-def fetch_info(urls: list[str], tools: Tools, cookies: list[dict] | None) -> dict[str, Any]:
+def fetch_info(urls: list[str], tools: Tools, cookies: list[dict] | None,
+               user_agent: str | None = None) -> dict[str, Any]:
     """Try each candidate URL in order and summarise the first that works.
 
     The summary describes the single video. If it belongs to a playlist, that
@@ -145,14 +173,15 @@ def fetch_info(urls: list[str], tools: Tools, cookies: list[dict] | None) -> dic
     explicit extra option.
     """
     errors: list[str] = []
+    log.info("info: %s", describe_cookies(cookies))
     with cookie_file(cookies) as cookiefile, ThreadPoolExecutor(max_workers=1) as pool:
-        options = _base_options(tools, cookiefile)
+        options = _base_options(tools, cookiefile, user_agent)
         for url in urls:
             # Look up the playlist in parallel so it doesn't slow the panel down.
             probe = pool.submit(_probe_playlist, url, options) if _has_playlist_param(url) else None
             try:
                 with yt_dlp.YoutubeDL(options) as ydl:
-                    info = ydl.extract_info(url, download=False)
+                    info = _extract(ydl, url, download=False)
                 if not info:
                     raise FetchError("No video information returned")
                 info = ydl.sanitize_info(info)
@@ -259,6 +288,7 @@ class DownloadJob:
     choice: dict[str, Any]
     output_dir: Path
     cookies: list[dict] | None = None
+    user_agent: str | None = None
     playlist: bool = False  # download the whole playlist instead of one video
     cancel_event: threading.Event = field(default_factory=threading.Event)
     _temp_files: set[str] = field(default_factory=set)
@@ -345,7 +375,7 @@ class DownloadJob:
             raise FetchError("ffmpeg is not installed. Run the installer again to set it up.")
         emit({"phase": "starting"})
         with cookie_file(self.cookies) as cookiefile:
-            options = _base_options(tools, cookiefile)
+            options = _base_options(tools, cookiefile, self.user_agent)
             options.update(formats.build_download_options(self.choice))
             options.update({
                 "paths": {"home": str(self.output_dir)},
@@ -370,7 +400,7 @@ class DownloadJob:
             try:
                 with yt_dlp.YoutubeDL(options) as ydl:
                     ydl.add_post_processor(PlanRecorderPP(self._progress, self.cancel_event), when="before_dl")
-                    info = ydl.extract_info(self.url, download=True)
+                    info = _extract(ydl, self.url, download=True)
             except (JobCancelled, DownloadError) as exc:
                 if self.cancel_event.is_set() or isinstance(exc, JobCancelled):
                     self._remove_temp_files()

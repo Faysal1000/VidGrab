@@ -168,3 +168,46 @@ class CookieTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InstagramStoryFallbackTest(unittest.TestCase):
+    PAGE = ('<html><script type="application/json">{"require":[["x",{"data":'
+            '{"xdt_api__v1__feed__reels_media":{"reels_media":[{"items":['
+            '{"pk":"111","video_versions":[{"type":101,"url":"https://cdn/a.mp4"}]},'
+            '{"pk":"222","video_duration":7.5,"user":{"full_name":"Some One"},'
+            '"image_versions2":{"candidates":[{"url":"https://cdn/t.jpg"}]},'
+            '"video_versions":[{"type":101,"url":"https://cdn/b.mp4","width":720,"height":1280}]},'
+            '{"pk":"333","image_versions2":{"candidates":[{"url":"https://cdn/p.jpg"}]}}'
+            ']}]}}}]]}</script></html>')
+    URL = "https://www.instagram.com/stories/someone/222/"
+
+    def setUp(self):
+        try:
+            from vidgrab import instagram
+        except ImportError:
+            self.skipTest("yt-dlp not installed")
+        self.instagram = instagram
+
+    def test_picks_story_by_id(self):
+        info = self.instagram.parse_story_page(self.PAGE, "222", "someone", self.URL)
+        self.assertEqual(info["id"], "222")
+        self.assertEqual(info["formats"][0]["url"], "https://cdn/b.mp4")
+        self.assertEqual(info["uploader"], "Some One")
+        self.assertEqual(info["thumbnail"], "https://cdn/t.jpg")
+
+    def test_defaults_to_first_story(self):
+        info = self.instagram.parse_story_page(self.PAGE, None, "someone", self.URL)
+        self.assertEqual(info["id"], "111")
+
+    def test_photo_story_is_reported(self):
+        with self.assertRaises(self.instagram.StoryError):
+            self.instagram.parse_story_page(self.PAGE, "333", "someone", self.URL)
+
+    def test_no_data(self):
+        self.assertIsNone(self.instagram.parse_story_page("<html></html>", None, "x", self.URL))
+
+    def test_story_url_detection(self):
+        self.assertTrue(self.instagram.is_story_url(self.URL))
+        self.assertTrue(self.instagram.is_story_url("https://www.instagram.com/stories/someone/"))
+        self.assertFalse(self.instagram.is_story_url("https://www.instagram.com/stories/highlights/1/"))
+        self.assertFalse(self.instagram.is_story_url("https://www.instagram.com/reel/abc/"))

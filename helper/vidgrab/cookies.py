@@ -61,3 +61,15 @@ def cookie_file(cookies: list[dict[str, Any]] | None) -> Iterator[str | None]:
             os.remove(path)
         except OSError:
             pass
+
+
+LOGIN_COOKIES = ("sessionid", "c_user", "auth_token", "SAPISID", "sid_tt")
+
+
+def describe_cookies(cookies: list[dict[str, Any]] | None) -> str:
+    """Log-safe summary: count and whether a login cookie is present (never values)."""
+    if not cookies:
+        return "no cookies"
+    names = {c.get("name") for c in cookies}
+    logged_in = any(name in names for name in LOGIN_COOKIES)
+    return f"{len(cookies)} cookies, login cookie {'present' if logged_in else 'missing'}"

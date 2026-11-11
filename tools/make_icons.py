@@ -2,7 +2,7 @@
 
     python3 tools/make_icons.py
 
-Draws a rounded coral square with the white download glyph from icon.svg, supersampled
+Draws a rounded pastel square with a dark download glyph from icon.svg, supersampled
 for smooth edges.
 """
 
@@ -17,9 +17,9 @@ OUT_DIR = Path(__file__).resolve().parent.parent / "extension" / "icons"
 SIZES = (16, 32, 48, 128)
 SUPERSAMPLE = 4
 
-TOP = (255, 162, 76)      # gradient start (amber)
-BOTTOM = (255, 106, 61)   # gradient end (coral)
-WHITE = (255, 255, 255)
+TOP = (253, 224, 191)     # gradient start (peach)
+BOTTOM = (242, 167, 191)  # gradient end (blush)
+GLYPH = (59, 51, 70)      # dark plum-grey glyph
 
 
 def _inside_rounded_rect(x: float, y: float, radius: float) -> bool:
@@ -67,7 +67,7 @@ def _sample(x: float, y: float) -> tuple[int, int, int, int]:
     if not _inside_rounded_rect(x, y, 0.22):
         return (0, 0, 0, 0)
     if any(_dist_to_segment(x, y, *s) <= _half_width for s in STROKES):
-        return (*WHITE, 255)
+        return (*GLYPH, 255)
     t = (x + y) / 2
     return (*(round(a + (b - a) * t) for a, b in zip(TOP, BOTTOM)), 255)
 

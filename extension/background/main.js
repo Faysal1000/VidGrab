@@ -26,6 +26,7 @@ async function getInfo({ urls }) {
   return helper.request("info", {
     urls: candidates,
     cookies: await cookiesFor(candidates[0], settings),
+    user_agent: navigator.userAgent,
   });
 }
 
@@ -46,6 +47,7 @@ async function startDownload({ url, choice, meta = {} }) {
     choice,
     output_dir: settings.downloadDir,
     cookies: await cookiesFor(url, settings),
+    user_agent: navigator.userAgent,
   });
   return { jobId: job.id };
 }
@@ -167,7 +169,7 @@ jobs.onChange(() => {
   const count = jobs.activeCount();
   updateKeepAlive(count);
   chrome.action.setBadgeText({ text: count ? String(count) : "" });
-  chrome.action.setBadgeBackgroundColor({ color: "#ff6a3d" });
+  chrome.action.setBadgeBackgroundColor({ color: "#e98aa6" });
 });
 
 function notify(jobId, title, message) {
@@ -190,6 +192,10 @@ chrome.notifications.onClicked.addListener((jobId) => {
 // ---------------------------------------------------------------------------
 
 chrome.runtime.onInstalled.addListener(() => {
+  // Installed, updated or reloaded: start with a clean downloads list and helper log.
+  jobs.clearAll();
+  helper.request("clear_log").catch(() => {}); // helper may not be installed yet
+
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID,
     title: "Download video with VidGrab",

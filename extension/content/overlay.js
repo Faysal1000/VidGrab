@@ -9,32 +9,39 @@
   const HIDE_DELAY_MS = 500;
   const EXTENSION_ORIGIN = new URL(chrome.runtime.getURL("/")).origin;
 
-  // Neumorphic pill: soft matte surface with a light/dark shadow pair, coral accent.
+  // Neumorphic round icon button; the "Download" label slides out on hover.
   const BUTTON_CSS = `
     :host { all: initial; }
     button {
-      position: fixed; display: none; align-items: center; gap: 7px;
-      padding: 8px 14px 8px 11px; border: 0; border-radius: 999px; cursor: pointer;
+      position: fixed; display: none; align-items: center; gap: 0;
+      height: 34px; padding: 0 9px; border: 0; border-radius: 999px; cursor: pointer;
       font: 650 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #2c313c; background: #e7eaf0;
+      color: #353a46; background: #e6e9ef;
       box-shadow: 4px 4px 10px rgba(0,0,0,.28), -2px -2px 6px rgba(255,255,255,.55),
                   inset 1px 1px 0 rgba(255,255,255,.7);
-      transition: transform .15s, box-shadow .15s, background .15s, color .15s;
+      transition: transform .15s, box-shadow .15s, background .15s, color .15s, gap .2s, padding .2s;
       z-index: ${Z_TOP};
     }
     button.visible { display: inline-flex; }
-    button svg { width: 16px; height: 16px; color: #ff6a3d; transition: color .15s; }
-    button:hover {
-      transform: translateY(-1px); color: #fff;
-      background: linear-gradient(135deg, #ffa24c, #ff6a3d);
-      box-shadow: 4px 6px 16px rgba(255,106,61,.45), inset 1px 1px 0 rgba(255,255,255,.35);
+    button svg { flex: none; width: 16px; height: 16px; color: #d9718f; transition: color .15s; }
+    button span {
+      max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
+      transition: max-width .22s ease, opacity .18s ease;
     }
-    button:hover svg { color: #fff; }
+    button:hover, button:focus-visible { gap: 7px; padding: 0 14px 0 11px; }
+    button:hover span, button:focus-visible span { max-width: 90px; opacity: 1; }
+    button:hover {
+      transform: translateY(-1px); color: #3b3346;
+      background: linear-gradient(135deg, #fde0bf 0%, #f6bfd0 55%, #cfdcf2 100%);
+      box-shadow: 4px 6px 16px rgba(242,167,191,.5), inset 1px 1px 0 rgba(255,255,255,.35);
+    }
+    button:hover svg { color: #3b3346; }
     button:active { transform: none; box-shadow: inset 2px 2px 5px rgba(0,0,0,.2); }
     @media (prefers-color-scheme: dark) {
       button { color: #e8eaef; background: #2a2e36;
                box-shadow: 4px 4px 10px rgba(0,0,0,.45), -2px -2px 6px rgba(255,255,255,.06),
                            inset 1px 1px 0 rgba(255,255,255,.06); }
+      button svg { color: #f4b3c8; }
     }
   `;
   const DOWNLOAD_ICON = `
@@ -79,7 +86,7 @@
     constructor(onClick) {
       this.#onClick = onClick;
       const { host, shadow } = createHost(BUTTON_CSS,
-        `<button type="button" title="Download this video">${DOWNLOAD_ICON}<span>Download</span></button>`);
+        `<button type="button" aria-label="Download this video">${DOWNLOAD_ICON}<span>Download</span></button>`);
       this.#host = host;
       this.#button = shadow.querySelector("button");
       this.#button.addEventListener("click", (event) => {
@@ -124,9 +131,10 @@
       if (!this.#host.isConnected) this.#mount();
       const rect = video.getBoundingClientRect();
       this.#button.classList.add("visible");
-      const width = this.#button.offsetWidth;
+      // Anchored by its right edge so the hover label grows leftwards.
       this.#button.style.top = `${Math.max(rect.top, 0) + 12}px`;
-      this.#button.style.left = `${Math.min(rect.right, innerWidth) - width - 12}px`;
+      const viewport = document.documentElement.clientWidth || innerWidth;
+      this.#button.style.right = `${viewport - Math.min(rect.right, viewport) + 12}px`;
     }
 
     #videoAt(x, y) {

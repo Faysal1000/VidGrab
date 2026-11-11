@@ -1,4 +1,5 @@
 # Installed into helper/.venv by installer/install.py
-yt-dlp[default]
+# curl-cffi lets yt-dlp look like a real browser (Instagram/Facebook block plain requests)
+yt-dlp[default,curl-cffi]
 # JavaScript runtime yt-dlp needs for YouTube (ships the deno binary)
 deno

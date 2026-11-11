@@ -15,7 +15,7 @@
 .label { font-weight: 650; }
 .hint { font-size: 12.5px; color: var(--muted); }
 
-/* Neumorphic toggle: pressed track, raised knob that turns coral when on. */
+/* Neumorphic toggle: pressed track, raised knob that turns pastel when on. */
 .switch {
   appearance: none; flex: none; width: 52px; height: 30px; border-radius: 99px; cursor: pointer;
   background: var(--bg); box-shadow: var(--inset); position: relative; margin: 0;

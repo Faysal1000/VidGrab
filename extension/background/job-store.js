@@ -60,6 +60,13 @@ export class JobStore {
     return [...this.#jobs.values()].filter((j) => ACTIVE_STATUSES.has(j.status)).length;
   }
 
+  /** Forget every job (used when the extension is reloaded). */
+  async clearAll() {
+    await this.#ready;
+    this.#jobs.clear();
+    this.#changed({ immediate: true });
+  }
+
   clearFinished() {
     for (const [id, job] of this.#jobs) {
       if (!ACTIVE_STATUSES.has(job.status)) this.#jobs.delete(id);

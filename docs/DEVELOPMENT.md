@@ -73,7 +73,8 @@ Then click **reload ↻** on the extensions page, and reload open tabs if you ch
 ## Debugging
 
 - Helper log: `<install folder>/logs/helper.log`. It records each job's start, finish and failure,
-  and notes when the browser disconnects mid-download.
+  and notes when the browser disconnects mid-download. Reloading the extension clears the log and the
+  downloads list, so each reload starts fresh.
 - Extension: on the extensions page, click **Inspect views: service worker** on VidGrab.
 
 ## Credits

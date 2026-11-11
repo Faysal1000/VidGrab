@@ -3,23 +3,23 @@
  * Neumorphic style: every surface uses the same base colour and is
  * "extruded" (--raised) or "pressed in" (--inset) with a pair of shadows —
  * a light one from the top-left and a dark one from the bottom-right.
- * The warm coral→amber gradient is the only accent colour.
+ * Accents are pastel: a peach → blush → sky gradient, with deeper rose for text.
  */
 
 :root {
   color-scheme: light dark;
 
-  --bg: #e7eaf0;
-  --text: #2c313c;
-  --muted: #7d8595;
-  --shade-dark: #c3c9d4;
+  --bg: #e6e9ef;
+  --text: #353a46;
+  --muted: #8a90a0;
+  --shade-dark: #c6ccd8;
   --shade-light: #ffffff;
 
-  --accent: #ff6a3d;
-  --accent-2: #ffa24c;
-  --accent-text: #e2552b;
-  --on-accent: #ffffff;
-  --accent-gradient: linear-gradient(135deg, var(--accent-2), var(--accent));
+  --accent: #f2a7bf;
+  --accent-2: #fcd9b4;
+  --accent-text: #c95f82;
+  --on-accent: #3b3346;
+  --accent-gradient: linear-gradient(135deg, #fde0bf 0%, #f6bfd0 55%, #cfdcf2 100%);
   --danger: #e0475a;
   --success: #1f9d6c;
 
@@ -27,7 +27,7 @@
   --raised-sm: 3px 3px 7px var(--shade-dark), -3px -3px 7px var(--shade-light);
   --inset: inset 3px 3px 7px var(--shade-dark), inset -3px -3px 7px var(--shade-light);
   --inset-sm: inset 2px 2px 4px var(--shade-dark), inset -2px -2px 4px var(--shade-light);
-  --accent-glow: 0 6px 16px rgba(255, 106, 61, .35);
+  --accent-glow: 0 6px 16px rgba(242, 167, 191, .45);
 
   --radius: 18px;
   --radius-sm: 12px;
@@ -41,10 +41,10 @@
     --muted: #949bab;
     --shade-dark: #1b1e23;
     --shade-light: #31363f;
-    --accent-text: #ff8a5c;
+    --accent-text: #f4b3c8;
     --danger: #ff6b78;
     --success: #4fd39b;
-    --accent-glow: 0 6px 18px rgba(255, 106, 61, .28);
+    --accent-glow: 0 6px 18px rgba(0, 0, 0, .35);
   }
 }
 

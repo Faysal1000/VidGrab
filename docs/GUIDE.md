@@ -105,7 +105,8 @@ Open them with the ⚙ gear in the panel.
 | Windows: "Windows protected your PC" | Click **More info → Run anyway**. |
 | File won't play | Choose **MP4**. MKV/WebM may need [VLC](https://www.videolan.org/). |
 
-Still stuck? Open an issue with the error message, and attach `logs/helper.log` from the install folder.
+Still stuck? Reproduce the problem, then open an issue with the error message and attach `logs/helper.log`
+from the install folder. The log starts fresh each time the extension is reloaded.
 
 ---
 

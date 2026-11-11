@@ -12,6 +12,7 @@ or start another one while the first is still running.
 from __future__ import annotations
 
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import subprocess
 import sys
@@ -26,6 +27,7 @@ import yt_dlp
 from . import __version__
 from .environment import HELPER_DIR, Tools, discover_tools, resolve_download_dir
 from .protocol import MessageWriter
+from .cookies import describe_cookies
 from .ytdlp_runner import DownloadJob, FetchError, JobCancelled, fetch_info
 
 log = logging.getLogger("vidgrab.commands")
@@ -35,6 +37,24 @@ Handler = Callable[[str, dict[str, Any]], None]
 
 class CommandError(Exception):
     pass
+
+
+def _reset_log_file(handler: RotatingFileHandler) -> None:
+    """Delete the log and its rotated backups, then reopen an empty file."""
+    path = Path(handler.baseFilename)
+    with handler.lock:
+        handler.close()
+        for old in (path, *path.parent.glob(path.name + ".*")):
+            try:
+                old.unlink()
+            except OSError:
+                pass
+        handler.stream = handler._open()
+
+
+def _user_agent(message: dict[str, Any]) -> str | None:
+    agent = message.get("user_agent")
+    return agent if isinstance(agent, str) and 0 < len(agent) < 512 else None
 
 
 def _validate_url(url: Any) -> str:
@@ -60,6 +80,7 @@ class Dispatcher:
             "cancel": (self._cancel, False),
             "reveal": (self._reveal, False),
             "update": (self._update, True),
+            "clear_log": (self._clear_log, False),
         }
 
     # -- plumbing -------------------------------------------------------------
@@ -128,7 +149,8 @@ class Dispatcher:
         urls = [_validate_url(u) for u in message.get("urls") or [] if u]
         if not urls:
             raise CommandError("No video URL provided")
-        self._result(request_id, fetch_info(urls, self._tools, message.get("cookies")))
+        self._result(request_id, fetch_info(urls, self._tools, message.get("cookies"),
+                                                  _user_agent(message)))
 
     def _download(self, request_id: str, message: dict[str, Any]) -> None:
         choice = message.get("choice")
@@ -140,11 +162,13 @@ class Dispatcher:
             choice=choice,
             output_dir=resolve_download_dir(message.get("output_dir")),
             cookies=message.get("cookies"),
+            user_agent=_user_agent(message),
             playlist=bool(choice.get("playlist")),
         )
         with self._jobs_lock:
             self._jobs[request_id] = job
-        log.info("Job %s started: %s %s -> %s", request_id, job.url, choice, job.output_dir)
+        log.info("Job %s started: %s %s -> %s (%s)", request_id, job.url, choice, job.output_dir,
+                 describe_cookies(job.cookies))
         try:
             result = job.run(self._tools, lambda data: self._progress(request_id, data))
             log.info("Job %s finished: %s", request_id, result["files"])
@@ -177,6 +201,14 @@ class Dispatcher:
         else:
             subprocess.Popen(["xdg-open", str(path.parent)])
         self._result(request_id, {"ok": True})
+
+    def _clear_log(self, request_id: str, _message: dict[str, Any]) -> None:
+        """Start a fresh log (the extension calls this when it is reloaded)."""
+        for handler in logging.getLogger().handlers:
+            if isinstance(handler, RotatingFileHandler):
+                _reset_log_file(handler)
+        log.info("Log cleared (extension reloaded)")
+        self._result(request_id, {"cleared": True})
 
     def _update(self, request_id: str, _message: dict[str, Any]) -> None:
         """Upgrade yt-dlp (and deno) inside this venv. Takes effect when the helper restarts."""
