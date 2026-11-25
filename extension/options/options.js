@@ -97,6 +97,16 @@ function setupUpdates(settings) {
     }
   };
 
+  // Answer a manual check right on the button, then restore it.
+  let flashTimer;
+  const flash = (text) => {
+    button.textContent = text;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      if (!pending) button.textContent = "Check for updates";
+    }, 2500);
+  };
+
   $("version-line").textContent = `VidGrab ${chrome.runtime.getManifest().version}`;
   callBackground(MSG.CHECK_UPDATE).then(show).catch(() => {});
 
@@ -111,10 +121,11 @@ function setupUpdates(settings) {
       }
       button.textContent = "Checking…";
       show(await callBackground(MSG.CHECK_UPDATE, { force: true }));
-      if (!pending) button.textContent = "Check for updates";
+      if (!pending) flash("No update found");
     } catch (error) {
       detail.textContent = error.message;
-      button.textContent = pending ? "Update" : "Check for updates";
+      if (pending) button.textContent = "Update";
+      else flash("Check failed");
     }
     button.disabled = false;
   });
