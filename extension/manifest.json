@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "VidGrab – Video Downloader",
   "short_name": "VidGrab",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Download videos from YouTube, Instagram, Facebook and 1000+ sites in the format you choose.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiSmHxwQIcTJjp/IB/qKr0mqsjQ/euDejFuSgpAsi8sIsTKo45X3AN7qmTbNDOUjLRYIvOW7WtCM35fc7TpKGTIZ6qpBZvlxpSAFiwDNRxScFssosNWClClwdlcI/vnTkTHLK67N2wmBU2/jHKva2k0By0qqKurAUF4N2UUcND0VkvvWCTZK/epje1dfH11N77iK2jEZjvgzARAeHfLKTCYmKbHXKcbRGAGxXoLj4X/vfEa1w92GjR7VL56KIQwPMn9BkJRbyTXZHls9vSy7P4SVQb/57tbPrXHuY89f9BkwFbRdOzj/NF7N3mBIQvugJc5ph3y21Zf0LpuO7n4If0QIDAQAB",
   "minimum_chrome_version": "116",
