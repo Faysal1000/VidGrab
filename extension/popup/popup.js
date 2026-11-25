@@ -367,6 +367,11 @@ async function init() {
   $("update-btn").addEventListener("click", updateYtDlp);
   $("settings-btn").addEventListener("click", () => chrome.runtime.openOptionsPage());
 
+  // Same setting as "Show download button on videos" in Settings; pages update live.
+  const overlayToggle = $("overlay-toggle");
+  overlayToggle.checked = state.settings.showOverlayButton !== false;
+  overlayToggle.addEventListener("change", () => saveSettings({ showOverlayButton: overlayToggle.checked }));
+
   watchJobs();
   loadHelperStatus();
   loadInfo();

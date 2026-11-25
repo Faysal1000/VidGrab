@@ -83,7 +83,7 @@ Open them with the ⚙ gear in the panel.
 | Setting | What it does |
 |---|---|
 | Save to folder | Empty = Downloads. Or a full path like `~/Movies/VidGrab` or `C:\Users\you\Videos`. |
-| Show download button on videos | Turn off to use only the toolbar icon or right-click menu. |
+| Show download button on videos | Turn off to hide the ⬇ button on videos; use the toolbar icon or right-click menu instead. Also available as a switch at the bottom of the panel. |
 | Use my browser login | Needed for private or login-only videos (Instagram, Facebook…). |
 | Also use my login for YouTube | Off by default. Only for age-restricted videos or "confirm you're not a bot". It can occasionally sign you out of YouTube. |
 

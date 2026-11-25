@@ -36,6 +36,15 @@ async function loadHelper() {
 async function init() {
   const settings = await getSettings();
 
+  // Keep toggles in sync when a setting is changed elsewhere (e.g. from the panel).
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync") return;
+    for (const id of CHECKBOXES) {
+      if (id in changes) $(id).checked = changes[id].newValue !== false;
+    }
+    syncDependentControls();
+  });
+
   $("downloadDir").value = settings.downloadDir;
   $("downloadDir").addEventListener("change", (e) => save({ downloadDir: e.target.value.trim() }));
 
