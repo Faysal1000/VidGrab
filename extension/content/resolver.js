@@ -7,7 +7,7 @@
 // To support a new site, add an entry to SITE_RULES.
 
 (() => {
-  if (globalThis.VidGrabResolver) return;
+  // Re-running only redefines classes; content/main.js decides whether to start.
 
   const MIN_VIDEO_WIDTH = 160;
   const MIN_VIDEO_HEIGHT = 90;

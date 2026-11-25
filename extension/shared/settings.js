@@ -13,6 +13,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   useCookiesForYouTube: false,
   /** Show the floating download button on videos. */
   showOverlayButton: true,
+  /** How often to look for a new VidGrab version, in days. 0 = never (manual only). */
+  updateCheckDays: 1,
   /** Remembered format choices. */
   lastKind: "video",
   lastContainer: "mp4",
@@ -28,3 +30,5 @@ export async function getSettings() {
 export async function saveSettings(partial) {
   await chrome.storage.sync.set(partial);
 }
+
+export const UPDATE_CHECK_CHOICES = Object.freeze([1, 7, 15, 30, 0]);

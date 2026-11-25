@@ -3,7 +3,7 @@
 // Everything lives in a closed shadow root so page CSS can't affect it.
 
 (() => {
-  if (globalThis.VidGrabOverlay) return;
+  // Re-running only redefines classes; content/main.js decides whether to start.
 
   const Z_TOP = "2147483647";
   const HIDE_DELAY_MS = 500;

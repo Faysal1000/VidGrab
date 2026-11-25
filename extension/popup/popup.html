@@ -26,6 +26,15 @@
     </header>
 
     <main>
+      <!-- Shown when a newer VidGrab release exists (see popup.js#loadUpdateStatus). -->
+      <section id="update-banner" class="update-banner" hidden>
+        <span class="update-text">
+          <strong id="update-title">Update available</strong>
+          <span class="muted" id="update-detail" hidden></span>
+        </span>
+        <button class="btn primary" id="update-app-btn" type="button">Update</button>
+      </section>
+
       <!-- Exactly one of these sections is visible at a time (see popup.js#showView). -->
       <section id="view-loading" class="view">
         <div class="skeleton thumb"></div>

@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import __version__
+from . import __version__, self_update
 from .environment import HELPER_DIR, Tools, discover_tools, resolve_download_dir
 from .protocol import MessageWriter
 from .cookies import describe_cookies
@@ -81,6 +81,8 @@ class Dispatcher:
             "reveal": (self._reveal, False),
             "update": (self._update, True),
             "clear_log": (self._clear_log, False),
+            "check_update": (self._check_update, True),
+            "self_update": (self._self_update, True),
         }
 
     # -- plumbing -------------------------------------------------------------
@@ -209,6 +211,34 @@ class Dispatcher:
                 _reset_log_file(handler)
         log.info("Log cleared (extension reloaded)")
         self._result(request_id, {"cleared": True})
+
+    def _check_update(self, request_id: str, _message: dict[str, Any]) -> None:
+        try:
+            release = self_update.latest_release()
+        except self_update.UpdateError as exc:
+            raise CommandError(str(exc)) from exc
+        self._result(request_id, {
+            "current": __version__,
+            "latest": release["version"],
+            "tag": release["tag"],
+            "available": self_update.is_newer(release["version"]),
+            "notes": release["notes"],
+            "url": release["url"],
+        })
+
+    def _self_update(self, request_id: str, message: dict[str, Any]) -> None:
+        tag = message.get("tag")
+        if not isinstance(tag, str) or not tag or len(tag) > 40:
+            raise CommandError("Missing release tag")
+        with self._jobs_lock:
+            if self._jobs:
+                raise CommandError("Wait for your downloads to finish, then update.")
+        try:
+            result = self_update.apply_update(tag, lambda data: self._progress(request_id, data))
+        except self_update.UpdateError as exc:
+            log.warning("Self-update failed: %s", exc)
+            raise CommandError(str(exc)) from exc
+        self._result(request_id, result)
 
     def _update(self, request_id: str, _message: dict[str, Any]) -> None:
         """Upgrade yt-dlp (and deno) inside this venv. Takes effect when the helper restarts."""

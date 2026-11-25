@@ -63,6 +63,28 @@ bash install_mac.sh                    # copy your changes into the install fold
 
 Then click **reload ↻** on the extensions page, and reload open tabs if you changed content scripts.
 
+## Releasing a new version
+
+Commit your changes, then:
+
+```bash
+python3 tools/release.py 1.1.0
+```
+
+It sets the version in `extension/manifest.json` and `helper/vidgrab/__init__.py`, commits and pushes.
+GitHub Actions ([release.yml](../.github/workflows/release.yml)) then checks both versions match, runs
+the tests, and creates tag `v1.1.0` with its GitHub Release. Installed copies then show **Update**.
+You can also bump the two version numbers by hand; any push to `main` that changes them releases.
+
+How the update works: the extension asks the helper (`check_update` / `self_update` in
+`helper/vidgrab/self_update.py`). The helper fetches the release from GitHub itself, downloads the
+source zip (HTTPS, 50 MB limit), refuses unsafe zip paths, a different extension `key`, or a version
+that doesn't match the tag, then runs the release's own `installer/install.py --update`. That backs up
+the installed files and restores them if any step (copy, pip, self-test) fails. The extension then
+calls `chrome.runtime.reload()` and re-injects content scripts into open tabs.
+
+Forks: change `UPDATE_REPO` in `helper/vidgrab/__init__.py`.
+
 ## Common changes
 
 - **Wrong video picked on a site:** add a rule to `SITE_RULES` in `extension/content/resolver.js`.

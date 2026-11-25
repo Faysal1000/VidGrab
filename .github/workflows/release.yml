@@ -1,0 +1,67 @@
+# Publishes a GitHub Release whenever the version number changes on main.
+#
+# Bump the version (python3 tools/release.py 1.1.0) and push: this workflow
+# checks the version is the same in both places, runs the tests, then creates
+# tag v1.1.0 and its release. Installed copies of VidGrab then offer "Update".
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - extension/manifest.json
+      - helper/vidgrab/__init__.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Read version
+        id: version
+        run: |
+          manifest=$(python3 -c "import json; print(json.load(open('extension/manifest.json'))['version'])")
+          helper=$(python3 -c "import re; print(re.search(r'__version__ = \"([^\"]+)\"', open('helper/vidgrab/__init__.py').read())[1])")
+          if [ "$manifest" != "$helper" ]; then
+            echo "::error::Version mismatch: manifest.json says $manifest, helper says $helper"
+            exit 1
+          fi
+          echo "version=$manifest" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$manifest" >/dev/null; then
+            echo "Release v$manifest already exists; nothing to do."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tests
+        if: steps.version.outputs.exists == 'false'
+        run: |
+          python -m pip install --quiet -r helper/requirements.txt
+          python -m unittest discover tests
+
+      - name: Create release
+        if: steps.version.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "VidGrab $VERSION" \
+            --generate-notes

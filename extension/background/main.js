@@ -7,6 +7,7 @@ import { describeChoice, fileName } from "../shared/format.js";
 import { NativeHost } from "./native-host.js";
 import { JobStore } from "./job-store.js";
 import { cookiesFor } from "./cookies.js";
+import { Updater } from "./updates.js";
 
 const HOST_NAME = "com.vidgrab.helper"; // must match installer/install.py
 const CONTEXT_MENU_ID = "vidgrab-download";
@@ -14,6 +15,11 @@ const EXTENSION_ORIGIN = new URL(chrome.runtime.getURL("/")).origin;
 
 const helper = new NativeHost(HOST_NAME);
 const jobs = new JobStore();
+const updater = new Updater(helper, {
+  canUpdate: () => (jobs.activeCount() ? "Wait for your downloads to finish, then update." : null),
+  onBusy: (busy) => { updateBusy = busy; refreshKeepAlive(); },
+});
+let updateBusy = false;
 
 // ---------------------------------------------------------------------------
 // Request handlers (popup / options page -> background)
@@ -118,6 +124,14 @@ async function updateYtDlp() {
   return result;
 }
 
+function checkUpdate({ force }) {
+  return updater.status({ force: Boolean(force) });
+}
+
+function applyUpdate() {
+  return updater.apply();
+}
+
 const HANDLERS = {
   [MSG.GET_INFO]: getInfo,
   [MSG.START_DOWNLOAD]: startDownload,
@@ -126,6 +140,8 @@ const HANDLERS = {
   [MSG.CLEAR_FINISHED]: clearFinished,
   [MSG.HELPER_STATUS]: helperStatus,
   [MSG.UPDATE_YTDLP]: updateYtDlp,
+  [MSG.CHECK_UPDATE]: checkUpdate,
+  [MSG.APPLY_UPDATE]: applyUpdate,
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -156,6 +172,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 const KEEPALIVE_INTERVAL_MS = 20_000;
 let keepAliveTimer = null;
 
+function refreshKeepAlive() {
+  updateKeepAlive(jobs.activeCount() + (updateBusy ? 1 : 0));
+}
+
 function updateKeepAlive(activeCount) {
   if (activeCount && !keepAliveTimer) {
     keepAliveTimer = setInterval(() => chrome.runtime.getPlatformInfo(), KEEPALIVE_INTERVAL_MS);
@@ -167,7 +187,7 @@ function updateKeepAlive(activeCount) {
 
 jobs.onChange(() => {
   const count = jobs.activeCount();
-  updateKeepAlive(count);
+  refreshKeepAlive();
   chrome.action.setBadgeText({ text: count ? String(count) : "" });
   chrome.action.setBadgeBackgroundColor({ color: "#e98aa6" });
 });
@@ -195,6 +215,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // Installed, updated or reloaded: start with a clean downloads list and helper log.
   jobs.clearAll();
   helper.request("clear_log").catch(() => {}); // helper may not be installed yet
+  injectIntoOpenTabs();
 
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID,
@@ -202,6 +223,16 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["video", "link", "page"],
   });
 });
+
+// After an install/update/reload, scripts in already-open tabs belong to the old
+// extension and stop working; load fresh ones so the button works without a refresh.
+async function injectIntoOpenTabs() {
+  const { js = [] } = chrome.runtime.getManifest().content_scripts?.[0] ?? {};
+  const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
+  for (const tab of tabs) {
+    chrome.scripting.executeScript({ target: { tabId: tab.id }, files: js }).catch(() => {});
+  }
+}
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== CONTEXT_MENU_ID || !tab?.id) return;

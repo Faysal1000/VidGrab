@@ -14,6 +14,8 @@ browsers from launching programs inside Desktop, Documents or Downloads, and
 once installed, the downloaded folder can be moved or deleted freely.
 
 Re-running it is safe (it also applies code updates). Use --uninstall to undo.
+--update is used by the in-extension "Update VidGrab" button: no prompts, and
+the previous version is restored if any step fails.
 """
 
 from __future__ import annotations
@@ -106,15 +108,52 @@ def _replace_tree(source: Path, target: Path) -> None:
     shutil.copytree(source, target, ignore=shutil.ignore_patterns("__pycache__", ".DS_Store"))
 
 
+def _copy_if_changed(source: Path, target: Path) -> None:
+    # Leave unchanged files alone: Windows reads a running .bat file as it goes,
+    # so rewriting run_helper.bat while the helper runs could break it.
+    if target.exists() and target.read_bytes() == source.read_bytes():
+        return
+    shutil.copy2(source, target)
+
+
 def copy_files() -> None:
     step(f"Installing VidGrab to {INSTALL_DIR}")
     INSTALL_DIR.mkdir(parents=True, exist_ok=True)
     for name in HELPER_FILES:
-        shutil.copy2(SOURCE_HELPER_DIR / name, INSTALL_DIR / name)
+        _copy_if_changed(SOURCE_HELPER_DIR / name, INSTALL_DIR / name)
     _replace_tree(SOURCE_HELPER_DIR / HELPER_PACKAGE, INSTALL_DIR / HELPER_PACKAGE)
     ok("Helper copied")
     _replace_tree(SOURCE_EXTENSION_DIR, EXTENSION_DIR)
     ok("Extension copied")
+
+
+BACKUP_DIR = INSTALL_DIR / ".update-backup"
+_BACKED_UP = (*HELPER_FILES, HELPER_PACKAGE, "extension", "config.json")
+
+
+def backup_install() -> None:
+    """Snapshot the installed code so a failed update can be rolled back."""
+    if BACKUP_DIR.exists():
+        shutil.rmtree(BACKUP_DIR)
+    BACKUP_DIR.mkdir()
+    for name in _BACKED_UP:
+        source = INSTALL_DIR / name
+        if source.is_dir():
+            shutil.copytree(source, BACKUP_DIR / name, ignore=shutil.ignore_patterns("__pycache__"))
+        elif source.is_file():
+            shutil.copy2(source, BACKUP_DIR / name)
+
+
+def restore_backup() -> None:
+    for name in _BACKED_UP:
+        saved, target = BACKUP_DIR / name, INSTALL_DIR / name
+        if saved.is_dir():
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(saved, target)
+        elif saved.is_file():
+            shutil.copy2(saved, target)
+    shutil.rmtree(BACKUP_DIR, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
@@ -343,9 +382,30 @@ def print_next_steps(updated: bool) -> None:
 """)
 
 
+def run_update() -> None:
+    if not (EXTENSION_DIR / "manifest.json").exists() or not venv_python().exists():
+        sys.exit("VidGrab isn't installed yet. Run the installer normally first.")
+    backup_install()
+    try:
+        copy_files()
+        setup_venv()
+        write_config()
+        register()
+        if not self_test():
+            raise RuntimeError("the updated helper did not start")
+    except BaseException as exc:
+        warn(f"Update failed ({exc}); restoring the previous version")
+        restore_backup()
+        sys.exit(f"Update failed: {exc}")
+    shutil.rmtree(BACKUP_DIR, ignore_errors=True)
+    print("\n==> Update installed.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--uninstall", action="store_true", help="remove browser registrations")
+    parser.add_argument("--update", action="store_true",
+                        help="non-interactive update of an existing install, rolled back on failure")
     args = parser.parse_args()
 
     if args.uninstall:
@@ -354,6 +414,10 @@ def main() -> None:
             shutil.rmtree(INSTALL_DIR)
             ok(f"Removed {INSTALL_DIR}")
         print("\nDone. Also remove VidGrab from your browser's extensions page.")
+        return
+
+    if args.update:
+        run_update()
         return
 
     already_installed = (EXTENSION_DIR / "manifest.json").exists()

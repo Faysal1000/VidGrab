@@ -211,3 +211,51 @@ class InstagramStoryFallbackTest(unittest.TestCase):
         self.assertTrue(self.instagram.is_story_url("https://www.instagram.com/stories/someone/"))
         self.assertFalse(self.instagram.is_story_url("https://www.instagram.com/stories/highlights/1/"))
         self.assertFalse(self.instagram.is_story_url("https://www.instagram.com/reel/abc/"))
+
+
+class SelfUpdateTest(unittest.TestCase):
+    def setUp(self):
+        try:
+            from vidgrab import self_update
+        except ImportError:
+            self.skipTest("helper dependencies not installed")
+        self.su = self_update
+
+    def test_versions(self):
+        self.assertEqual(self.su.parse_version("v1.2.3"), (1, 2, 3))
+        self.assertTrue(self.su.is_newer("1.10.0", "1.9.9"))
+        self.assertFalse(self.su.is_newer("v1.0.0", "1.0.0"))
+        with self.assertRaises(self.su.UpdateError):
+            self.su.parse_version("1.0.0-beta")
+
+    def test_rejects_zip_slip(self):
+        import tempfile
+        import zipfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as temp:
+            archive = Path(temp) / "evil.zip"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                bundle.writestr("repo/../../escaped.txt", "x")
+            with self.assertRaises(self.su.UpdateError):
+                self.su._extract(archive, Path(temp) / "out")
+
+    def test_rejects_insecure_url(self):
+        with self.assertRaises(self.su.UpdateError):
+            self.su._open("http://example.com/update.zip", "application/zip")
+
+    def test_rejects_different_extension_key(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as temp:
+            installed, new = Path(temp) / "installed", Path(temp) / "new"
+            for root, key in ((installed, "KEY-A"), (new, "KEY-B")):
+                for name in ("installer/install.py", "helper/helper.py", "helper/vidgrab/__init__.py"):
+                    (root / name).parent.mkdir(parents=True, exist_ok=True)
+                    (root / name).write_text("")
+                (root / "extension").mkdir(exist_ok=True)
+                (root / "extension/manifest.json").write_text(json.dumps({"key": key, "version": "2.0.0"}))
+            with mock.patch.object(self.su, "HELPER_DIR", installed):
+                with self.assertRaises(self.su.UpdateError):
+                    self.su._verify(new, "2.0.0")

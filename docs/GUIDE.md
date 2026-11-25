@@ -67,10 +67,20 @@ There are three ways to start:
 
 | Situation | What to do |
 |---|---|
-| A site stopped working | Click **Update yt-dlp** in the panel footer (or in Settings). No reinstall needed. |
-| New VidGrab version | Download it, run the installer again, then click **reload ↻** on VidGrab in the extensions page. |
+| New VidGrab version | An **Update** button appears at the top of the panel. Click it, and VidGrab downloads, installs and restarts itself. |
+| A site stopped working | Click **Update yt-dlp** in the panel footer (or in Settings). |
 
-Each computer updates its own copy.
+**How often VidGrab checks:** Settings → Updates → *Check automatically*: every day (default), every 7,
+15 or 30 days, or **Never (manual)**. With Never, click **Check for updates** in Settings whenever you
+like; if a new version exists the button changes to **Update to x.y.z**.
+
+- Updates come only from this project's GitHub Releases, over HTTPS.
+- The Update button waits until your downloads have finished.
+- If an update fails, the previous version is restored automatically.
+- Tabs that were already open get the new version of the ⬇ button straight away.
+
+Each computer updates its own copy. Copies installed before the Update button existed need one last
+manual update: download the new version and run the installer again.
 
 Don't reload the extension while a download is running, because that cancels it.
 

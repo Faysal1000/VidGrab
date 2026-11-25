@@ -35,9 +35,12 @@ Files go to your **Downloads** folder.
 
 If the video is part of a playlist, click **Download all** to get the whole playlist.
 
-## Something stopped working?
+## Updates
 
-Click **Update yt-dlp** at the bottom of the VidGrab panel.
+When a new version is out, click **Update** at the top of the VidGrab panel. It installs itself.
+How often it checks (or manual only) is in ⚙ Settings → Updates.
+
+Something stopped working on a site? Click **Update yt-dlp** at the bottom of the panel.
 
 ## More
 

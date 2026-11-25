@@ -11,6 +11,8 @@ export const MSG = Object.freeze({
   CLEAR_FINISHED: "vidgrab:clear-finished",
   HELPER_STATUS: "vidgrab:helper-status",
   UPDATE_YTDLP: "vidgrab:update-ytdlp",
+  CHECK_UPDATE: "vidgrab:check-update",
+  APPLY_UPDATE: "vidgrab:apply-update",
 
   // background/popup -> content script
   RESOLVE_ACTIVE_VIDEO: "vidgrab:resolve-active-video",

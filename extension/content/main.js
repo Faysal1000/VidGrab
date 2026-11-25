@@ -2,8 +2,20 @@
 // answers requests from the popup / background.
 
 (() => {
-  if (globalThis.__vidgrabContentLoaded) return;
-  globalThis.__vidgrabContentLoaded = true;
+  // After the extension is reloaded or updated, the background injects this
+  // script again into open tabs. Depending on the browser, the new copy may
+  // share globals with the old one. Skip if a working copy is already running;
+  // retire a copy that was cut off from the extension.
+  const isAlive = () => {
+    try {
+      return Boolean(chrome.runtime?.getURL(""));
+    } catch {
+      return false; // "Extension context invalidated"
+    }
+  };
+  const previous = globalThis.__vidgrabContent;
+  if (previous?.isAlive()) return;
+  previous?.retire();
 
   // Mirrors shared/messages.js (content scripts can't import ES modules).
   const MSG = {
@@ -14,6 +26,19 @@
   const { resolveVideo, resolveActive } = globalThis.VidGrabResolver;
   const panel = new VidGrabOverlay.Panel();
   const button = new VidGrabOverlay.DownloadButton((video) => panel.open(resolveVideo(video)));
+
+  // A copy cut off by a reload/update can't open the panel any more: hide its
+  // button (the freshly injected copy shows its own).
+  const retire = () => {
+    button.setEnabled(false);
+    panel.close();
+    document.removeEventListener("pointermove", retireIfOrphaned, true);
+  };
+  const retireIfOrphaned = () => {
+    if (!isAlive()) retire();
+  };
+  document.addEventListener("pointermove", retireIfOrphaned, { capture: true, passive: true });
+  globalThis.__vidgrabContent = { isAlive, retire };
 
   // Remember what was right-clicked, for the context-menu entry.
   let lastContextTarget = null;

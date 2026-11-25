@@ -70,7 +70,54 @@ async function init() {
     }
   });
 
+  setupUpdates(settings);
   loadHelper();
+}
+
+// -- VidGrab updates ----------------------------------------------------------
+
+function setupUpdates(settings) {
+  const select = $("updateCheckDays");
+  select.value = String(settings.updateCheckDays);
+  select.addEventListener("change", () => save({ updateCheckDays: Number(select.value) }));
+
+  const button = $("check-update-btn");
+  const detail = $("version-detail");
+  let pending = null; // status of an available update, once found
+
+  const show = (status) => {
+    $("version-line").textContent = `VidGrab ${status.current}`;
+    if (status.available) {
+      pending = status;
+      detail.textContent = `${status.latest} available`;
+      button.textContent = "Update";
+      button.classList.replace("secondary", "primary");
+    } else {
+      detail.textContent = status.checked ? "Up to date" : "";
+    }
+  };
+
+  $("version-line").textContent = `VidGrab ${chrome.runtime.getManifest().version}`;
+  callBackground(MSG.CHECK_UPDATE).then(show).catch(() => {});
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      if (pending) {
+        button.textContent = "Updating…";
+        const result = await callBackground(MSG.APPLY_UPDATE);
+        detail.textContent = `Updated to ${result.version}`;
+        return; // the extension reloads itself and this page closes
+      }
+      button.textContent = "Checking…";
+      show(await callBackground(MSG.CHECK_UPDATE, { force: true }));
+      if (!pending) button.textContent = "Check for updates";
+    } catch (error) {
+      detail.textContent = error.message;
+      button.textContent = pending ? "Update" : "Check for updates";
+    }
+    button.disabled = false;
+  });
 }
 
 init();

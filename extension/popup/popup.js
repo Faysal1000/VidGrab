@@ -353,6 +353,39 @@ function setupEmbedding() {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// VidGrab updates (banner at the top of the panel)
+// ---------------------------------------------------------------------------
+
+async function loadUpdateStatus() {
+  try {
+    const status = await callBackground(MSG.CHECK_UPDATE);
+    if (!status.available) return;
+    $("update-title").textContent = `Version ${status.latest} available`;
+    $("update-banner").hidden = false;
+  } catch {
+    // Offline, no releases yet, or helper missing: just don't show the banner.
+  }
+}
+
+async function applyUpdate() {
+  const button = $("update-app-btn");
+  button.disabled = true;
+  button.textContent = "Updating…";
+  $("update-detail").hidden = true;
+  try {
+    const result = await callBackground(MSG.APPLY_UPDATE);
+    $("update-title").textContent = `Updated to ${result.version}`;
+    button.hidden = true;
+  } catch (error) {
+    // Only errors get a second line.
+    $("update-detail").textContent = error.message;
+    $("update-detail").hidden = false;
+    button.textContent = "Retry";
+    button.disabled = false;
+  }
+}
+
 async function init() {
   setupEmbedding();
   state.settings = await getSettings();
@@ -372,8 +405,11 @@ async function init() {
   overlayToggle.checked = state.settings.showOverlayButton !== false;
   overlayToggle.addEventListener("change", () => saveSettings({ showOverlayButton: overlayToggle.checked }));
 
+  $("update-app-btn").addEventListener("click", applyUpdate);
+
   watchJobs();
   loadHelperStatus();
+  loadUpdateStatus();
   loadInfo();
 }
 
